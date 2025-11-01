@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Panel | Gen Z Shop</title>
+  <style>
+          body {
+  font-family: 'Poppins', sans-serif;
+  background: #fff;
+  color: #111;
+  margin: 0;
+  padding: 0;
+  scroll-behavior: smooth;
+  position: relative;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: radial-gradient(circle at 10% 20%, #0095ff2f, transparent 60%),
+              radial-gradient(circle at 80% 10%, #0095ff2f, transparent 60%),
+              radial-gradient(circle at 50% 80%, rgba(255, 101, 101, 0.307), transparent 70%);
+  filter: blur(40px);
+  z-index: -1;
+}
+
+    header {
+      background: rgba(255,255,255,0.6);
+      backdrop-filter: blur(10px);
+      padding: 1rem 2rem;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    nav a {
+      text-decoration: none;
+      color: #333;
+      margin: 0 1rem;
+      font-weight: 500;
+      transition: 0.3s;
+    }
+
+    nav a:hover { color: #007bff; }
+
+    .container {
+      max-width: 800px;
+      margin: 2rem auto;
+      background: rgba(255,255,255,0.8);
+      backdrop-filter: blur(10px);
+      border-radius: 20px;
+      padding: 2rem;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+    }
+
+    h2 {
+      text-align: center;
+      margin-bottom: 1rem;
+    }
+
+    input, textarea, select, button {
+      width: 100%;
+      margin-bottom: 1rem;
+      padding: 0.7rem;
+      border-radius: 10px;
+      border: 1px solid #ccc;
+      font-size: 1rem;
+    }
+
+    button {
+      background: #111;
+      color: #fff;
+      cursor: pointer;
+      border: none;
+      transition: 0.3s;
+    }
+
+    button:hover {
+      background: #333;
+      transform: scale(1.03);
+    }
+
+    .color-picker {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .product-list {
+      margin-top: 2rem;
+    }
+
+    .product-item {
+      background: #fff;
+      border-radius: 10px;
+      padding: 1rem;
+      margin-bottom: 1rem;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.05);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .actions button {
+      margin-left: 5px;
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🛠️ Admin Panel</h1>
+    <nav>
+      <a href="index.html">🏬 Shop</a>
+      <a href="customers.html">👥 Customers</a>
+    </nav>
+  </header>
+
+  <div class="container">
+    <h2>Add / Edit Product</h2>
+    <label><strong>Name</strong></label>
+    <input type="text" id="pName" placeholder="Product Name">
+    <label><strong>Price</strong></label>
+    <input type="number" id="pPrice" placeholder="Price (EGP)">
+    <label><strong>Description</strong></label>
+    <textarea id="pDesc" placeholder="Product Description"></textarea>
+    <label><strong>image</strong></label>
+    <input type="text" id="pImage" placeholder="Image URL (https://...)">
+
+    <label><strong>Product Status</strong></label>
+    <select id="pStock">
+      <option value="in">In Stock</option>
+      <option value="out">Out of Stock</option>
+    </select>
+    <label><strong>Season</strong></label>
+    <select id="pSeason">
+      <option value="summer">Summer</option>
+      <option value="winter">Winter</option>
+    </select>
+    <label><strong>Type</strong></label>
+    <select id="pType">
+      <option value="top">Top</option>
+      <option value="bottom">Bottom</option>
+    </select>
+    <div class="color-picker">
+      <label><strong>Colors:</strong></label>
+      <button id="addColor">+ Add Color</button>
+      <div id="colorContainer"></div>
+    </div>
+    
+    <button id="saveProduct" style="background-color: #007bff;">Save Product</button>
+
+    <div class="product-list" id="productList"></div>
+  </div>
+
+  <script>
+    const nameEl = document.getElementById('pName');
+    const priceEl = document.getElementById('pPrice');
+    const descEl = document.getElementById('pDesc');
+    const imgEl = document.getElementById('pImage');
+    const statusEl = document.getElementById('pStock');
+    const colorContainer = document.getElementById('colorContainer');
+    const addColorBtn = document.getElementById('addColor');
+    const saveBtn = document.getElementById('saveProduct');
+    const productList = document.getElementById('productList');
+
+    let products = JSON.parse(localStorage.getItem('products')) || [];
+    let colors = [];
+
+    addColorBtn.onclick = () => {
+      const input = document.createElement('input');
+      input.type = 'color';
+      input.value = '#000000';
+      input.addEventListener('input', () => {
+        colors = Array.from(document.querySelectorAll('#colorContainer input')).map(c => c.value);
+      });
+      colorContainer.appendChild(input);
+    };
+
+    saveBtn.onclick = () => {
+      if (!nameEl.value || !priceEl.value) {
+        alert('Please enter product name and price.');
+        return;
+      }
+
+      const product = {
+      name: nameEl.value,
+      price: parseFloat(priceEl.value),
+      desc: descEl.value,
+      image: imgEl.value,
+      color: colors.join(','),
+      status: document.getElementById('pStock').value,
+      season: document.getElementById('pSeason').value,
+      type: document.getElementById('pType').value // ✅ إضافة الموسم
+    };
+
+
+      products.push(product);
+      localStorage.setItem('products', JSON.stringify(products));
+      renderProducts();
+      clearForm();
+      alert('✅ Product saved successfully!');
+    };
+
+    function renderProducts() {
+      productList.innerHTML = '';
+      products.forEach((p, i) => {
+        productList.innerHTML += `
+          <div class="product-item">
+            <div>
+              <strong>${p.name}</strong><br>
+              ${p.price} EGP — <em>${p.status}</em>
+            </div>
+            <div class="actions">
+              <button onclick="editProduct(${i})"style=background-color:#5b97ff;>Edit</button>
+              <button onclick="deleteProduct(${i})" style=background-color:#ff0000;>Delete</button>
+            </div>
+          </div>`;
+      });
+    }
+
+    function editProduct(i) {
+    const p = products[i];
+    nameEl.value = p.name;
+    priceEl.value = p.price;
+    descEl.value = p.desc;
+    imgEl.value = p.image;
+    statusEl.value = p.status;
+    colors = p.color ? p.color.split(',') : [];
+    colorContainer.innerHTML = '';
+    colors.forEach(c => {
+      const input = document.createElement('input');
+      input.type = 'color';
+      input.value = c.trim();
+      colorContainer.appendChild(input);
+    });
+    // ضبط الموسم عند التعديل
+    document.getElementById('pSeason').value = p.season || 'winter';
+    document.getElementById('pType').value = p.type || 'top';
+    document.getElementById('pStock').value = p.status || 'instock';
+    deleteProduct(i);
+  }
+
+
+    function deleteProduct(i) {
+      products.splice(i, 1);
+      localStorage.setItem('products', JSON.stringify(products));
+      renderProducts();
+    }
+
+    function clearForm() {
+      nameEl.value = '';
+      priceEl.value = '';
+      descEl.value = '';
+      imgEl.value = '';
+      statusEl.value = 'in';
+      colorContainer.innerHTML = '';
+      colors = [];
+    }
+
+    renderProducts();
+  </script>
+</body>
+</html>

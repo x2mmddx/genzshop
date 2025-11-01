@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gen Z Shop</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="header">
+    <div class="header-container">
+      <div class="logo">Gen Z Shop</div>
+      <nav class="nav">
+        <ul>
+          <li><a href="#home">Home</a></li>
+          <li><a href="#products">Products</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Hero -->
+  <section class="hero" id="home">
+    <h1>Welcome to Gen Z Shop</h1>
+    <p>Where style meets innovation — Express yourself, your way.</p>
+    <a href="#products" class="btn">Shop Now</a>
+  </section>
+
+  <!-- Products -->
+  <!-- Products -->
+<section class="products" id="products"><br>
+  <h2>Featured Products</h2>
+  
+  <div class="filters">
+    <div class="filter-group">
+      <label for="seasonFilter">Filter:</label>
+      <select id="seasonFilter">
+        <option value="all">All</option>
+        <option value="summer">Summer</option>
+        <option value="winter">Winter</option>
+        <option value="top">Top</option>
+        <option value="bottom">Bottom</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <label for="stockFilter">Availability:</label>
+      <select id="stockFilter">
+        <option value="all">All</option>
+        <option value="in">In stock</option>
+        <option value="out">Out of stock</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <label for="priceSort">Sort by Price:</label>
+      <select id="priceSort">
+        <option value="none">None</option>
+        <option value="lowToHigh">Low to High</option>
+        <option value="highToLow">High to Low</option>
+      </select>
+    </div>
+  </div><br>
+
+
+  <div class="product-grid" id="productGrid"></div><br><br>
+</section>
+
+
+  <!-- About -->
+  <section class="about">
+    <div class="about-container">
+      <div class="about-text">
+        <h2>About Gen Z Shop</h2>
+        <p>We bring you the latest fashion trends with high-quality products. Our mission is to provide stylish clothing for everyone at affordable prices.</p>
+      <br><div class="social-icons">
+        <h3>Contact us</h3><br>
+        <a href="https://www.facebook.com/profile.php?id=61576992284033" target="_blank">FB Page</a>
+        <a href="https://www.facebook.com/groups/3533158283488475" target="_blank">FB Group</a>
+        <a href="https://wa.me/+201550304882" target="_blank">WhatsApp</a>
+
+      </div>
+      </div>
+      
+      <div class="about-image">
+        <img src="https://scontent-hbe1-1.xx.fbcdn.net/v/t39.30808-6/506248366_122104767200899742_5189433329278248353_n.jpg?_nc_cat=105&ccb=1-7&_nc_sid=a5f93a&_nc_ohc=MoYAEy0xs50Q7kNvwEZdEnp&_nc_oc=AdkhdZ_pCYVhjTBPcZdQSsYZSslg7aGgVOBiwKDzvnUU9pJHsQAbihSL46P-teXF838&_nc_zt=23&_nc_ht=scontent-hbe1-1.xx&_nc_gid=ywmBOpiYxHPGDHZLd8OUTg&oh=00_AfdzFWI7X5asa-Ae7dKQ3yDUOh8jl7Y2Ap1l1AZsqGnVJg&oe=690C10A9" alt="About Us">
+      </div>
+      
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer-">
+      <p>© 2025 Gen Z Shop. All Rights Reserved.</p>
+      <a href="#" id="loginBtn" class="admin-link">Admin</a>
+    </div>
+  </footer>
+
+  <!-- Admin Login Modal -->
+  <div class="modal" id="loginModal">
+    <div class="modal-content">
+      <span class="close-btn" id="closeLogin">&times;</span>
+      <h3>Admin Login</h3>
+      <input type="text" id="loginUser" placeholder="Username">
+      <input type="password" id="loginPass" placeholder="Password">
+      <button class="btn-login" id="loginSubmit">Login</button>
+    </div>
+  </div>
+  
+  <script>
+    // عرض المنتجات المخزنة من الادمن
+    const productGrid = document.getElementById('productGrid');
+    const products = JSON.parse(localStorage.getItem('products')) || [];
+
+    productGrid.innerHTML = '';
+    products.forEach((p, index) => {
+      const card = document.createElement('div');
+      card.className = 'product-card';
+      card.innerHTML = `
+        <img src="${p.image}" alt="${p.name}">
+        <h3>${p.name}</h3>
+        <p class="price">$${p.price}</p>
+        <a href="#" class="btn-small" data-index="${index}">View Details</a>`;
+      productGrid.appendChild(card);
+    });
+
+    document.querySelectorAll('.btn-small').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const index = btn.getAttribute('data-index');
+        localStorage.setItem('selectedProduct', JSON.stringify(products[index]));
+        window.location.href = 'product.html';
+      });
+    });
+
+    // Admin Login
+    const loginModal = document.getElementById('loginModal');
+    const loginBtn = document.getElementById('loginBtn');
+    const closeLogin = document.getElementById('closeLogin');
+    const loginSubmit = document.getElementById('loginSubmit');
+
+    loginBtn.onclick = () => loginModal.style.display = 'flex';
+    closeLogin.onclick = () => loginModal.style.display = 'none';
+    window.onclick = e => { if(e.target === loginModal) loginModal.style.display = 'none'; };
+
+    loginSubmit.onclick = () => {
+      const user = document.getElementById('loginUser').value.trim();
+      const pass = document.getElementById('loginPass').value.trim();
+      if(user === 'mu' && pass === '000') {
+        window.location.href = 'admin.html';
+      } else {
+        alert('❌ Wrong username or password!');
+      }
+    };
+    const seasonFilter = document.getElementById('seasonFilter');
+    const stockFilter = document.getElementById('stockFilter');
+    const priceSort = document.getElementById('priceSort');function renderProducts() {
+  productGrid.innerHTML = '';
+
+  let filteredProducts = [...products];
+
+  // فلترة الموسم/النوع
+  const season = seasonFilter.value;
+  if (season !== 'all') {
+    filteredProducts = filteredProducts.filter(p => p.season === season || p.type === season);
+  }
+
+  // فلتر المخزون
+  const stock = stockFilter.value; // قيمته: 'all' أو 'in' أو 'out'
+  if (stock !== 'all') {
+    filteredProducts = filteredProducts.filter(p => p.status === stock);
+  }
+
+  // فرز السعر
+  const sort = priceSort.value;
+  if (sort === 'lowToHigh') filteredProducts.sort((a,b) => a.price - b.price);
+  else if (sort === 'highToLow') filteredProducts.sort((a,b) => b.price - a.price);
+
+  // Animation container (optional) — لو عندك container تريد تضيف له fade class
+  // const containerEl = document.querySelector('.product-grid');
+  // containerEl.classList.add('fade-out');
+  // setTimeout(() => { containerEl.classList.remove('fade-out'); containerEl.classList.add('fade-in'); }, 50);
+
+  filteredProducts.forEach((p, index) => {
+  const card = document.createElement('div');
+  card.className = 'product-card';
+  card.style.opacity = 0;
+  card.style.transition = 'opacity 0.5s ease';
+
+  // لو المنتج Out of Stock
+  const isOut = p.status === 'out';
+
+  card.innerHTML = `
+    <div class="product-image-container ${isOut ? 'out-stock' : ''}">
+      <img src="${p.image}" alt="${p.name}">
+      ${isOut ? '<span class="out-label">Out of Stock</span>' : ''}
+    </div>
+    <h3>${p.name}</h3>
+    <p class="price">$${p.price}</p>
+    <a href="#" class="btn-small" data-index="${index}" ${isOut ? 'style="pointer-events:none;opacity:0.5;"' : ''}>View Details</a>
+  `;
+
+  productGrid.appendChild(card);
+
+  setTimeout(() => { card.style.opacity = 1; }, 100);
+});
+
+// تفعيل الأزرار من جديد
+document.querySelectorAll('.btn-small').forEach(btn => {
+  btn.addEventListener('click', (e) => {
+    e.preventDefault();
+    const index = btn.getAttribute('data-index');
+    localStorage.setItem('selectedProduct', JSON.stringify(filteredProducts[index]));
+    window.location.href = 'product.html';
+  });
+});
+
+  // ربط أزرار View Details للمنتجات المتاحة فقط
+  document.querySelectorAll('.product-card').forEach((card, idx) => {
+    const btn = card.querySelector('.btn-small');
+    if (!btn) return;
+    // index هنا يشير لموضع العنصر في filteredProducts
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      // لو العنصر فوقه كلاس out-of-stock تمنع الانتقال
+      if (card.classList.contains('out-of-stock')) return;
+      // خذ المنتج الصحيح من filteredProducts
+      const prod = filteredProducts[idx];
+      localStorage.setItem('selectedProduct', JSON.stringify(prod));
+      window.location.href = 'product.html';
+    });
+  });
+}
+
+
+
+  // تفعيل الأزرار من جديد
+// التفعيل
+seasonFilter.addEventListener('change', renderProducts);
+stockFilter.addEventListener('change', renderProducts);
+priceSort.addEventListener('change', renderProducts);
+
+// أول عرض
+renderProducts();
+
+  </script>
+</body>
+</html>

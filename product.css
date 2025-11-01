@@ -1,0 +1,317 @@
+body {
+  font-family: 'Poppins', sans-serif;
+  background: #fff;
+  color: #111;
+  margin: 0;
+  padding: 0;
+  scroll-behavior: smooth;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: radial-gradient(circle at 10% 20%, #0095ff2f, transparent 60%),
+              radial-gradient(circle at 80% 10%, #0095ff2f, transparent 60%),
+              radial-gradient(circle at 50% 80%, rgba(255, 101, 101, 0.307), transparent 70%);
+  filter: blur(40px);
+  z-index: -1;
+}
+
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 2rem;
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(15px);
+  position: sticky;
+  top: 0;
+  box-shadow: 0 5px 25px rgba(0,0,0,0.1);
+  z-index: 100;
+}
+
+header h2 {
+  font-size: 1.8rem;
+  color: #5b97ff;
+  letter-spacing: 1px;
+}
+.container {
+  display: flex;
+  justify-content: center;
+  align-items: stretch;
+  gap: 3rem;
+  max-width: 1200px;
+  margin: 4rem auto;
+  padding: 2rem;
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(10px);
+  border-radius: 25px;
+  box-shadow: 0 15px 40px rgba(0,0,0,0.08);
+}
+
+/* Left Side - Image */
+.container .left {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.product-card {
+  position: relative;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+  background: #fff;
+  text-align: center;
+  transition: transform 0.3s ease, box-shadow 0.3s ease, opacity 0.5s ease;
+}
+
+.product-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+
+.product-card img {
+  width: 100%;
+  border-radius: 12px 12px 0 0;
+  transition: 0.3s ease;
+}
+/* ===== Out of stock styles (ضع هذا في آخر style.css) ===== */
+.product-card {
+  position: relative;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #fff;
+  transition: transform 0.25s ease, box-shadow 0.25s ease, opacity 0.4s ease;
+}
+
+.product-card img {
+  width: 100%;
+  height: 300px;
+  object-fit: cover;
+  display: block;
+  transition: filter 0.25s ease, transform 0.25s ease;
+}
+
+/* overlay الذي يظهر عندما المنتج غير متوفر */
+.product-card .out-overlay {
+  position: absolute;
+  inset: 0; /* top:0;right:0;bottom:0;left:0; */
+  background: rgba(0,0,0,0.6);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+  pointer-events: none;
+}
+
+/* عند وضع كلاس out-of-stock */
+.product-card.out-of-stock img {
+  filter: brightness(45%);
+}
+
+.product-card.out-of-stock .out-overlay {
+  opacity: 1;
+}
+
+/* تعطيل زر view details */
+.product-card.out-of-stock .btn-small {
+  pointer-events: none;
+  background: #999 !important;
+  cursor: not-allowed;
+  transform: none !important;
+  opacity: 0.9;
+}
+
+
+.product-img {
+  width: 100%;
+  max-width: 500px;
+  max-height: 600px;
+  object-fit: cover;
+  border-radius: 20px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+  transition: transform 0.4s ease, box-shadow 0.4s ease;
+}
+
+.product-img:hover {
+  transform: scale(1.05);
+  box-shadow: 0 20px 45px rgba(0,0,0,0.25);
+}
+
+/* Right Side - Info */
+.container .right {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 1rem;
+}
+
+#pName {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #5b97ff;
+  text-transform: uppercase;
+  margin-bottom: 0.5rem;
+}
+
+#pPrice {
+  font-size: 1.4rem;
+  color: #e63946;
+  margin-bottom: 1.2rem;
+}
+
+/* Colors */
+.colors {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 1rem;
+}
+
+.color-circle {
+  width: 35px;
+  height: 35px;
+  border-radius: 50%;
+  border: 2px solid #ccc;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.color-circle:hover {
+  transform: scale(1.2);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+}
+
+.color-circle.selected {
+  border: 3px solid #5b97ff;
+  box-shadow: 0 0 10px rgba(30,64,175,0.4);
+}
+
+
+#pDesc {
+  margin-top: 1rem;
+  font-size: 1rem;
+  color: #555;
+  line-height: 1.7;
+  background: rgba(255,255,255,0.85);
+  padding: 1.5rem;
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+  width: 100%;
+}
+
+select, input {
+  padding: 0.75rem 1rem;
+  border-radius: 15px;
+  border: none;
+  background: rgba(255,255,255,0.75);
+  box-shadow: inset 0 3px 8px rgba(0,0,0,0.05);
+  font-weight: 500;
+  cursor: pointer;
+  margin-bottom: 1rem;
+  width: 100%;
+  box-sizing: border-box;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+select:hover, input:hover {
+  transform: translateY(-2px);
+  box-shadow: inset 0 3px 12px rgba(0,0,0,0.1);
+}
+
+.btn {
+  background: #5b97ff;
+  color: #fff;
+  border: none;
+  padding: 0.9rem 1.8rem;
+  border-radius: 15px;
+  cursor: pointer;
+  font-weight: 600;
+  text-decoration: none;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+  transition: 0.3s;
+}
+
+.btn:hover {
+  background: #1b3a99;
+  transform: translateY(-2px) scale(1.05);
+}
+
+#buyNow {
+  background: #5b97ff;
+}
+
+#buyNow:hover {
+  background: #3f83ff;
+}
+
+.back-link {
+  margin-top: 2rem;
+  text-decoration: none;
+  color: #5b97ff;
+  font-weight: 600;
+}
+
+.back-link:hover {
+  color: #3b82f6;
+}
+
+footer {
+  text-align: center;
+  padding: 1.5rem;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 -5px 20px rgba(0,0,0,0.08);
+}
+
+/* Modal */
+.modal {
+  display: none;
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(0,0,0,0.6);
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: #fff;
+  padding: 2rem;
+  border-radius: 25px;
+  width: 90%;
+  max-width: 500px;
+  text-align: left;
+  position: relative;
+  animation: fadeIn 0.3s ease-in-out;
+  box-shadow: 0 25px 50px rgba(0,0,0,0.25);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.9); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.close-btn {
+  position: absolute;
+  top: 15px;
+  right: 20px;
+  font-size: 24px;
+  cursor: pointer;
+  color: #555;
+}
+
+.close-btn:hover {
+  color: #5b97ff;
+}

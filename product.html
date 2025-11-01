@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Product Details | Gen Z Shop</title>
+  <link rel="stylesheet" href="product.css">
+</head>
+
+<body>
+  <header>
+    <h2>Gen Z Shop</h2>
+    <a href="index.html" class="btn" >Back to Shop</a>
+  </header>
+
+  <div class="container">
+  <div class="left">
+    <img id="pImage" class="product-img" src="" alt="">
+  </div>
+
+  <div class="right">
+    <h2 id="pName"></h2>
+    <h3 id="pPrice"></h3>
+    <div class="colors" id="pColors"></div>
+
+    <br>
+    <label for="pSize" ><strong>Size:</strong></label><select id="pSize" style="width: 20%;">
+      <option value="L">L</option>
+      <option value="XL">XL</option>
+      <option value="2XL">2XL</option>
+      <option value="3XL">3XL</option>
+    </select>
+
+    <div class="buttons">
+      <button id="addToCart" class="btn" style="display:none;">Add to Cart 🛒</button>
+      <button id="buyNow" class="btn">Buy Now</button>
+    </div>
+    <br>
+    <div id="pDesc" style="width: 90%;"></div>
+
+  </div>
+</div>
+
+
+  <footer>
+    <p>Made with ❤️ by Gen Z</p>
+  </footer>
+
+  <!-- ===== Modal ===== -->
+   
+  <div class="modal" id="orderModal">
+    <div class="modal-content">
+      <span class="close-btn" id="closeModal">&times;</span>
+      <h3>Complete Your Order</h3>
+      <p><strong>Product:</strong> <span id="modalProductName"></span></p>
+      <p><strong>Price:</strong> <span id="modalProductPrice"></span> EGP</p>
+      <p><strong>Color:</strong> <span id="modalColor"></span></p>
+
+      <label>Full Name</label><br>
+      <input type="text" id="custName" placeholder="Enter your name" required><br>
+
+      <label>Phone Number</label><br>
+      <input type="tel" id="custPhone" placeholder="01XXXXXXXXX" required><br>
+
+      <label>Governorate</label><br>
+      <input list="govList" id="custGov" placeholder="Type or select governorate" required>
+      <datalist id="govList">
+        <option value="Cairo">
+        <option value="Giza">
+        <option value="Alexandria">
+        <option value="Port Said">
+        <option value="Suez">
+        <option value="Damietta">
+        <option value="Dakahlia">
+        <option value="Sharqia">
+        <option value="Qalyubia">
+        <option value="Kafr El Sheikh">
+        <option value="Gharbia">
+        <option value="Monufia">
+        <option value="Beheira">
+        <option value="Ismailia">
+        <option value="Fayoum">
+        <option value="Minya">
+        <option value="Assiut">
+        <option value="Sohag">
+        <option value="Qena">
+        <option value="Luxor">
+        <option value="Aswan">
+        <option value="Beni Suef">
+        <option value="Red Sea">
+        <option value="New Valley">
+        <option value="Matrouh">
+        <option value="North Sinai">
+        <option value="South Sinai">
+      </datalist><br>
+
+      <label>City</label><br>
+      <input type="text" id="custCity" placeholder="Enter your city" required><br>
+
+      <label>Full Address</label><br>
+      <input type="text" id="custAddress" placeholder="Street, building, floor..." required><br>
+
+      <label>Additional info</label><br>
+      <input type="text" id="custAdditional" placeholder="..........."><br>
+
+      <p class="total">Shipping: <span id="shippingCost">0</span> EGP</p>
+      <p class="total">Total: <span id="totalCost">0</span> EGP</p>
+
+      <button id="confirmOrder" class="btn" style="display: block; margin: 0 auto; background:#285da7;">Confirm Order</button>
+    </div>
+  </div>
+
+  <script src="product.js"></script>
+</body>
+</html>
+
+
+
+  <script>
+    const product = JSON.parse(localStorage.getItem('selectedProduct'));
+    const nameEl = document.getElementById('pName');
+    const priceEl = document.getElementById('pPrice');
+    const imgEl = document.getElementById('pImage');
+    const colorsEl = document.getElementById('pColors');
+    const descEl = document.getElementById('pDesc');
+    let selectedColor = '';
+
+    if (!product) {
+      document.body.innerHTML = '<h2>Product not found.</h2>';
+    } else {
+      nameEl.textContent = product.name;
+      priceEl.textContent = product.price + " EGP";
+      imgEl.src = product.image || 'https://via.placeholder.com/350';
+      descEl.textContent = product.desc || 'No description available.';
+      colorsEl.innerHTML = '';
+
+      if (product.color) {
+        product.color.split(',').forEach(c => {
+          const div = document.createElement('div');
+          div.className = 'color-circle';
+          div.style.background = c.trim();
+
+          div.onclick = () => {
+            document.querySelectorAll('.color-circle').forEach(cc => cc.classList.remove('selected'));
+            div.classList.add('selected');
+            selectedColor = c.trim();
+          };
+
+          colorsEl.appendChild(div);
+        });
+      }
+    }
+
+    document.getElementById('addToCart').onclick = () => {
+      if (!selectedColor) return alert('⚠️ Please select a color first.');
+      let cart = JSON.parse(localStorage.getItem('cart')) || [];
+      cart.push({
+        name: product.name,
+        price: product.price,
+        size: document.getElementById('pSize').value,
+        color: selectedColor
+      });
+      localStorage.setItem('cart', JSON.stringify(cart));
+      alert('🛒 Added to cart!');
+    };
+
+    // ===== Modal Logic =====
+    const modal = document.getElementById('orderModal');
+    const openModal = document.getElementById('buyNow');
+    const closeModal = document.getElementById('closeModal');
+    const govSelect = document.getElementById('custGov');
+    const shippingCostEl = document.getElementById('shippingCost');
+    const totalCostEl = document.getElementById('totalCost');
+
+    openModal.onclick = () => {
+      if (!selectedColor) {
+        alert('⚠️ Please select a color first.');
+        return;
+      }
+      modal.style.display = 'flex';
+      document.getElementById('modalProductName').textContent = product.name;
+      document.getElementById('modalProductPrice').textContent = product.price;
+      document.getElementById('modalColor').textContent = selectedColor;
+      updateTotal();
+    };
+
+    closeModal.onclick = () => modal.style.display = 'none';
+    window.onclick = e => { if (e.target === modal) modal.style.display = 'none'; };
+
+    function updateTotal() {
+      const upperEgypt = ["Minya", "Assiut", "Sohag", "Qena", "Luxor", "Aswan"];
+      const selectedGov = govSelect.value;
+      const shipping = upperEgypt.includes(selectedGov) ? 70 : (selectedGov ? 50 : 0);
+      const total = Number(product.price) + shipping;
+      shippingCostEl.textContent = shipping;
+      totalCostEl.textContent = total;
+    }
+
+    govSelect.addEventListener('change', updateTotal);
+
+    document.getElementById('confirmOrder').onclick = () => {
+    const name = document.getElementById('custName').value;
+    const phone = document.getElementById('custPhone').value;
+    const gov = govSelect.value;
+    const city = document.getElementById('custCity').value;
+    const address = document.getElementById('custAddress').value;
+    const addition = document.getElementById('custAdditional').value;
+    const size = document.getElementById('pSize').value; 
+
+    if (!name || !phone || !gov || !city || !address) {
+      alert('⚠️ Please fill all fields before confirming.');
+      return;
+    }
+
+    const date = new Date().toLocaleString();
+    const shipping = Number(shippingCostEl.textContent);
+    const total = Number(totalCostEl.textContent);
+    let customers = JSON.parse(localStorage.getItem('customers')) || [];
+
+    // حساب الـ ID كرقم مضاعف
+    let lastId = customers.length > 0 ? customers[customers.length - 1].id : 0;
+    let newId = lastId === 0 ? 1 : lastId + 1;
+
+    const newCustomer = {
+    id: newId,
+    product: product.name,
+    color: selectedColor,
+    size: size,
+    name,
+    phone,
+    gov,
+    city,
+    address,
+    price: Number(product.price),  // ✅ السعر الحقيقي للمنتج
+    shipping,
+    total,  // السعر الإجمالي مع الشحن
+    addition,
+    date
+  };
+
+    customers.push(newCustomer);
+  localStorage.setItem('customers', JSON.stringify(customers));
+
+  modal.style.display = 'none';
+
+  // ===== إنشاء نافذة عائمة للتأكيد =====
+  const floatModal = document.createElement('div');
+  floatModal.style.position = 'fixed';
+  floatModal.style.top = '50%';
+  floatModal.style.left = '50%';
+  floatModal.style.transform = 'translate(-50%, -50%)';
+  floatModal.style.background = '#fff';
+  floatModal.style.padding = '2rem';
+  floatModal.style.borderRadius = '15px';
+  floatModal.style.boxShadow = '0 5px 25px rgba(0,0,0,0.3)';
+  floatModal.style.zIndex = '2000';
+  floatModal.style.textAlign = 'center';
+  floatModal.style.minWidth = '300px';
+
+  floatModal.innerHTML = `
+    <h2 style="margin-bottom: 1rem;">✅ Order Confirmed!</h2>
+    <p>Your order number is <strong>#${newId}</strong></p>
+    <p>We will contact you shortly to confirm your order.</p>
+    <button id="closeFloatModal" style="
+      margin-top: 1rem;
+      padding: 0.6rem 1.2rem;
+      background:#007bff;
+      color:white;
+      border:none;
+      border-radius:10px;
+      cursor:pointer;
+    ">OK</button>
+  `;
+
+  document.body.appendChild(floatModal);
+
+  document.getElementById('closeFloatModal').onclick = () => {
+    floatModal.remove();
+  };
+};
+
+  </script>
+</body>
+</html>
