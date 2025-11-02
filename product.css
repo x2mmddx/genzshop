@@ -315,3 +315,70 @@ footer {
 .close-btn:hover {
   color: #5b97ff;
 }
+@media (max-width: 992px) {
+  .container {
+    flex-direction: column;     /* يخلي الصورة فوق والنص تحت */
+    align-items: center;
+    text-align: center;
+    gap: 2rem;
+  }
+
+  .container .left,
+  .container .right {
+    width: 100%;
+  }
+
+  .product-img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 20px;
+  }
+
+  #pName {
+    font-size: 1.6rem;
+    margin-top: 0.5rem;
+  }
+
+  #pPrice {
+    font-size: 1.2rem;
+    margin-bottom: 1rem;
+  }
+
+  #pDesc {
+    font-size: 1rem;
+    text-align: left;
+    line-height: 1.6;
+  }
+
+  .btn {
+    width: 90%;
+    max-width: 350px;
+    font-size: 1rem;
+    margin: 0.5rem auto;
+  }
+}
+
+@media (max-width: 600px) {
+  .container {
+    margin: 1rem;
+    padding: 1rem;
+    gap: 1.5rem;
+  }
+
+  .product-img {
+    max-height: 400px;
+  }
+
+  #pName {
+    font-size: 1.4rem;
+  }
+
+  #pDesc {
+    font-size: 0.95rem;
+  }
+
+  .btn {
+    font-size: 0.9rem;
+    padding: 0.8rem 1.4rem;
+  }
+}
