@@ -10,7 +10,11 @@
 <body>
   <header>
     <h2>Gen Z Shop</h2>
-    <a href="index.html" class="btn" >Back to Shop</a>
+
+
+  
+
+    <a href="index.html" style="text-decoration: None; color: #000; "  >Back to Shop</a>
   </header>
 
   <div class="container">
@@ -20,10 +24,13 @@
 
   <div class="right">
     <h2 id="pName"></h2>
-    <h3 id="pPrice"></h3>
-    <div class="colors" id="pColors"></div>
+    <div id="pDesc" style="width: 90%;"></div>
 
-    <br>
+<br>
+
+    <h3>Color:</h3>
+    <div class="colors" id="pColors"></div>
+    
     <label for="pSize" ><strong>Size:</strong></label><select id="pSize" style="width: 20%;">
       <option value="L">L</option>
       <option value="XL">XL</option>
@@ -32,13 +39,11 @@
     </select>
 
     <div class="buttons">
+          <h3 id="pPrice"></h3>
       <button id="addToCart" class="btn" style="display:none;">Add to Cart 🛒</button>
       <button id="buyNow" class="btn">Buy Now</button>
     </div>
-    <br>
-    <div id="pDesc" style="width: 90%;"></div>
-
-  </div>
+    </div>
 </div>
 
 
