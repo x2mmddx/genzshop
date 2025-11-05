@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Customers | Gen Z Shop</title>
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: #fff;
+      color: #111;
+      margin: 0;
+      padding: 0;
+      scroll-behavior: smooth;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: radial-gradient(circle at 10% 20%, #0095ff2f, transparent 60%),
+                  radial-gradient(circle at 80% 10%, #0095ff2f, transparent 60%),
+                  radial-gradient(circle at 50% 80%, rgba(255, 101, 101, 0.307), transparent 70%);
+      filter: blur(40px);
+      z-index: -1;
+    }
+
+    header {
+      background: rgba(255,255,255,0.6);
+      backdrop-filter: blur(10px);
+      padding: 1rem 2rem;
+      text-align: center;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+    }
+    nav a {
+      text-decoration: none;
+      color: #333;
+      margin: 0 1rem;
+      font-weight: 500;
+      transition: 0.3s;
+    }
+    nav a:hover { color: #007bff; }
+
+    #profits {
+      width: 92.5%;
+      margin: 1rem auto;
+      padding: 1rem 1.5rem;
+      background: #007bff;
+      color: #fff;
+      font-weight: 600;
+      border-radius: 12px;
+      text-align: left;
+      font-size: 16px;
+    }
+
+    table {
+      width: 95%;
+      margin: 1rem auto 2rem auto;
+      border-collapse: collapse;
+      background: #fff;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    th, td {
+      padding: 1rem;
+      text-align: center;
+      border-bottom: 1px solid #eee;
+    }
+
+    th {
+      background: #007bff;
+      color: #fff;
+      font-size: 15px;
+    }
+
+    tr:hover { background: #f8f9fa; }
+
+    .color-box {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      vertical-align: middle;
+      margin-left: 8px;
+    }
+
+    .product-name {
+      font-weight: 600;
+      color: #333;
+      cursor: pointer;
+    }
+
+    .delete-btn {
+      background: #e74c3c;
+      color: #fff;
+      border: none;
+      padding: 5px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+    .delete-btn:hover { background: #c0392b; }
+
+    #downloadCSV {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: #27ae60;
+      color: #fff;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 50px;
+      cursor: pointer;
+      font-size: 16px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+      transition: 0.3s;
+      z-index: 1000;
+    }
+    #downloadCSV:hover { background: #1e8449; }
+
+    #hoverPreview {
+      position: absolute;
+      display: none;
+      pointer-events: none;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid #ccc;
+      z-index: 10000;
+      width: 200px;
+      height: 200px;
+      background: #fff;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    }
+    #hoverPreview img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+  </style>
+</head>
+<body>
+  <header>
+  <nav style="display: flex; justify-content: space-between; align-items: center; padding: 0 2rem;">
+    <h1 style="margin: 0;">👥 Customers Data</h1>
+    <div>
+      <a href="index.html" style="margin-left: 1rem;">🏬 Shop</a>
+      <a href="admin.html" style="margin-left: 1rem;">🛠️ Admin Panel</a>
+    </div>
+  </nav>
+</header>
+
+
+  <div id="profits">
+    Total Profits: <span id="totalProfits">0</span> EGP
+  </div>
+
+  <table id="customersTable">
+    <tr>
+      <th>ID</th>
+      <th>Name</th>
+      <th>Phone</th>
+      <th>Governorate</th>
+      <th>City</th>
+      <th>Product</th>
+      <th>Color</th>
+      <th>Size</th>
+      <th>Amount</th>
+      <th>Price</th>
+      <th>Shipping</th>
+      <th>Total</th>
+      <th>Addition</th>
+      <th>Date</th>
+      <th>Action</th>
+    </tr>
+  </table>
+
+  <button id="downloadCSV">💾 Download CSV</button>
+
+  <div id="hoverPreview">
+    <img id="hoverImg" src="" alt="">
+  </div>
+
+  <script>
+    let orders = [];
+    let products = [];
+
+    function loadAll() {
+      Promise.all([
+        fetch('/api/orders').then(r => r.json()).catch(() => []),
+        fetch('/api/products').then(r => r.json()).catch(() => [])
+      ]).then(([o, p]) => {
+        orders = Array.isArray(o) ? o : [];
+        products = Array.isArray(p) ? p : [];
+        renderTable();
+      });
+    }
+
+    function renderTable() {
+      const table = document.getElementById('customersTable');
+      const totalProfitsEl = document.getElementById('totalProfits');
+
+      table.querySelectorAll('tr:not(:first-child)').forEach(r => r.remove());
+
+      let profits = 0;
+      orders.forEach((c) => {
+        const row = document.createElement('tr');
+        const color = c.color || 'transparent';
+        const colorDisplay = color !== 'N/A' && color !== 'transparent'
+          ? `<div class="color-box" style="background:${color};"></div>`
+          : 'N/A';
+
+        row.innerHTML = `
+          <td>${c.id}</td>
+          <td>${c.name}</td>
+          <td>${c.phone}</td>
+          <td>${c.gov}</td>
+          <td>${c.city}</td>
+          <td class="product-name">${c.product || 'N/A'}</td>
+          <td>${colorDisplay}</td>
+          <td>${c.size || 'N/A'}</td>
+          <td>${c.amount || 1}</td>
+          <td>${c.price} EGP</td>
+          <td>${c.shipping} EGP</td>
+          <td>${c.total} EGP</td>
+          <td>${c.addition || 'N/A'}</td>
+          <td>${c.date}</td>
+          <td><button class="delete-btn" data-id="${c.id}">Delete</button></td>
+        `;
+        table.appendChild(row);
+
+        profits += Number(c.total) - Number(c.shipping);
+      });
+
+      totalProfitsEl.textContent = profits;
+
+      document.querySelectorAll('.delete-btn').forEach(btn => {
+        btn.onclick = () => {
+          const id = btn.getAttribute('data-id');
+          fetch('/api/orders/' + encodeURIComponent(id), { method: 'DELETE' })
+            .then(r => r.ok ? loadAll() : alert('Delete failed'))
+            .catch(() => alert('Delete failed'));
+        };
+      });
+
+      const hoverPreview = document.getElementById('hoverPreview');
+      const hoverImg = document.getElementById('hoverImg');
+      document.querySelectorAll('.product-name').forEach(cell => {
+        const productName = cell.textContent;
+        const product = products.find(p => p.name === productName);
+        if (product) {
+          cell.addEventListener('mouseenter', e => {
+            hoverImg.src = product.image;
+            hoverPreview.style.display = 'block';
+            hoverPreview.style.top = e.pageY + 15 + 'px';
+            hoverPreview.style.left = e.pageX + 15 + 'px';
+          });
+          cell.addEventListener('mousemove', e => {
+            hoverPreview.style.top = e.pageY + 15 + 'px';
+            hoverPreview.style.left = e.pageX + 15 + 'px';
+          });
+          cell.addEventListener('mouseleave', () => {
+            hoverPreview.style.display = 'none';
+          });
+        }
+      });
+    }
+
+    loadAll();
+
+    // تحميل CSV
+    document.getElementById('downloadCSV').onclick = () => {
+      if(orders.length === 0) return alert('No data to download.');
+
+      let csv = 'ID,Name,Phone,Governorate,City,Product,Color,Size,Amount,Price,Shipping,Total,Addition,Date\n';
+      orders.forEach(c => {
+        const row = [
+          c.id,
+          `"${c.name}"`,
+          c.phone,
+          c.gov,
+          c.city,
+          `"${c.product || ''}"`,
+          c.color || '',
+          c.size || '',
+          c.amount || 1,
+          c.price,
+          c.shipping,
+          c.total,
+          c.addition || '',
+          c.date
+        ];
+        csv += row.join(',') + '\n';
+      });
+
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'customers_data.csv';
+      a.click();
+      URL.revokeObjectURL(url);
+    };
+  </script>
+</body>
+</html>

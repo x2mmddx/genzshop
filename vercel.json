@@ -1,0 +1,8 @@
+{
+  "version": 2,
+  "routes": [
+    { "src": "^/api/(.*)", "dest": "https://REPLACE_WITH_BACKEND_URL/api/$1" },
+    { "src": "^/uploads/(.*)", "dest": "https://REPLACE_WITH_BACKEND_URL/uploads/$1" }
+  ],
+  "cleanUrls": true
+}
