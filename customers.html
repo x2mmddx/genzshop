@@ -169,6 +169,7 @@
       <th>Product</th>
       <th>Color</th>
       <th>Size</th>
+      <th>Amount</th>
       <th>Price</th>
       <th>Shipping</th>
       <th>Total</th>
@@ -185,17 +186,28 @@
   </div>
 
   <script>
+    let orders = [];
+    let products = [];
+
+    function loadAll() {
+      Promise.all([
+        fetch('/api/orders').then(r => r.json()).catch(() => []),
+        fetch('/api/products').then(r => r.json()).catch(() => [])
+      ]).then(([o, p]) => {
+        orders = Array.isArray(o) ? o : [];
+        products = Array.isArray(p) ? p : [];
+        renderTable();
+      });
+    }
+
     function renderTable() {
-      const customers = JSON.parse(localStorage.getItem('customers')) || [];
       const table = document.getElementById('customersTable');
       const totalProfitsEl = document.getElementById('totalProfits');
 
-      // إزالة الصفوف السابقة
       table.querySelectorAll('tr:not(:first-child)').forEach(r => r.remove());
 
       let profits = 0;
-
-      customers.forEach((c, index) => {
+      orders.forEach((c) => {
         const row = document.createElement('tr');
         const color = c.color || 'transparent';
         const colorDisplay = color !== 'N/A' && color !== 'transparent'
@@ -211,40 +223,35 @@
           <td class="product-name">${c.product || 'N/A'}</td>
           <td>${colorDisplay}</td>
           <td>${c.size || 'N/A'}</td>
+          <td>${c.amount || 1}</td>
           <td>${c.price} EGP</td>
           <td>${c.shipping} EGP</td>
           <td>${c.total} EGP</td>
           <td>${c.addition || 'N/A'}</td>
           <td>${c.date}</td>
-          <td><button class="delete-btn" data-index="${index}">Delete</button></td>
+          <td><button class="delete-btn" data-id="${c.id}">Delete</button></td>
         `;
         table.appendChild(row);
 
-        // تحديث الأرباح بدون الشحن
         profits += Number(c.total) - Number(c.shipping);
       });
 
       totalProfitsEl.textContent = profits;
 
-      // الحذف
       document.querySelectorAll('.delete-btn').forEach(btn => {
         btn.onclick = () => {
-          const idx = btn.getAttribute('data-index');
-          customers.splice(idx, 1);
-          localStorage.setItem('customers', JSON.stringify(customers));
-          renderTable();
+          const id = btn.getAttribute('data-id');
+          fetch('/api/orders/' + encodeURIComponent(id), { method: 'DELETE' })
+            .then(r => r.ok ? loadAll() : alert('Delete failed'))
+            .catch(() => alert('Delete failed'));
         };
       });
 
-      // Hover preview للمنتجات
       const hoverPreview = document.getElementById('hoverPreview');
       const hoverImg = document.getElementById('hoverImg');
-
       document.querySelectorAll('.product-name').forEach(cell => {
         const productName = cell.textContent;
-        const productData = JSON.parse(localStorage.getItem('products')) || [];
-        const product = productData.find(p => p.name === productName);
-
+        const product = products.find(p => p.name === productName);
         if (product) {
           cell.addEventListener('mouseenter', e => {
             hoverImg.src = product.image;
@@ -263,28 +270,28 @@
       });
     }
 
-    renderTable();
+    loadAll();
 
     // تحميل CSV
     document.getElementById('downloadCSV').onclick = () => {
-      const customers = JSON.parse(localStorage.getItem('customers')) || [];
-      if(customers.length === 0) return alert('No data to download.');
+      if(orders.length === 0) return alert('No data to download.');
 
-      let csv = 'ID,Name,Phone,Governorate,City,Product,Color,Size, Price, Shipping, Total, Addition,Date\n';
-      customers.forEach(c => {
+      let csv = 'ID,Name,Phone,Governorate,City,Product,Color,Size,Amount,Price,Shipping,Total,Addition,Date\n';
+      orders.forEach(c => {
         const row = [
           c.id,
           `"${c.name}"`,
           c.phone,
           c.gov,
           c.city,
-          `"${c.product}"`,
-          c.color,
-          c.size,
+          `"${c.product || ''}"`,
+          c.color || '',
+          c.size || '',
+          c.amount || 1,
           c.price,
           c.shipping,
           c.total,
-          c.addition,
+          c.addition || '',
           c.date
         ];
         csv += row.join(',') + '\n';
