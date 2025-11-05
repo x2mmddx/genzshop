@@ -131,8 +131,22 @@ body::before {
     <input type="number" id="pPrice" placeholder="Price (EGP)">
     <label><strong>Description</strong></label>
     <textarea id="pDesc" placeholder="Product Description"></textarea>
-    <label><strong>image</strong></label>
-    <input type="text" id="pImage" placeholder="Image URL (https://...)">
+    <label style="display:flex;align-items:center;justify-content:space-between;gap:12px"><span><strong>Images</strong> <small>(comma-separated URLs)</small></span><button type="button" id="addAttachment" style="width:auto;min-width:140px;background:#10b981">Add attachment</button></label>
+    <input type="text" id="pImage" placeholder="https://img1.jpg, https://img2.jpg, https://img3.jpg">
+    <input type="file" id="imageFiles" accept="image/*" multiple style="display:none">
+    <label><strong>Model Image</strong> <small>(single URL)</small></label>
+    <input type="text" id="pModelImage" placeholder="https://model.jpg">
+
+    <label><strong>Sizes</strong></label>
+    <div id="pSizesGroup" class="sizes-group" style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:8px">
+      <label><input type="checkbox" value="S">S</label>
+      <label><input type="checkbox" value="M">M</label>
+      <label><input type="checkbox" value="L">L</label>
+      <label><input type="checkbox" value="XL">XL</label>
+      <label><input type="checkbox" value="2XL">2XL</label>
+      <label><input type="checkbox" value="3XL">3XL</label>
+    </div>
+    <small style="display:block;margin-top:-8px;margin-bottom:12px;opacity:.75"></small><br>
 
     <label><strong>Product Status</strong></label>
     <select id="pStock">
@@ -141,8 +155,8 @@ body::before {
     </select>
     <label><strong>Season</strong></label>
     <select id="pSeason">
-      <option value="summer">Summer</option>
       <option value="winter">Winter</option>
+      <option value="summer">Summer</option>
     </select>
     <label><strong>Type</strong></label>
     <select id="pType">
@@ -165,94 +179,279 @@ body::before {
     const priceEl = document.getElementById('pPrice');
     const descEl = document.getElementById('pDesc');
     const imgEl = document.getElementById('pImage');
+    const modelImgEl = document.getElementById('pModelImage');
+    const sizesGroupEl = document.getElementById('pSizesGroup');
     const statusEl = document.getElementById('pStock');
     const colorContainer = document.getElementById('colorContainer');
     const addColorBtn = document.getElementById('addColor');
     const saveBtn = document.getElementById('saveProduct');
     const productList = document.getElementById('productList');
+    const attachBtn = document.getElementById('addAttachment');
+    const fileInput = document.getElementById('imageFiles');
 
-    let products = JSON.parse(localStorage.getItem('products')) || [];
+    let products = [];
+    // colors: array of { value: '#hex', in: true|false }
     let colors = [];
+    let editingId = null; // track editing product id (if any)
 
-    addColorBtn.onclick = () => {
+    function getPrimaryImage(p){
+      try{
+        if (Array.isArray(p.images) && p.images.length) return p.images[0];
+        if (typeof p.image === 'string'){
+          if (p.image.includes(',')) return p.image.split(',')[0].trim();
+          if (p.image.trim()) return p.image.trim();
+        }
+      }catch(e){}
+      return 'https://via.placeholder.com/100x100';
+    }
+
+    function getSelectedSizes(){
+      try {
+        return Array.from(sizesGroupEl.querySelectorAll('input[type="checkbox"]:checked'))
+          .map(i=>i.value.trim()).filter(Boolean);
+      } catch(e){ return []; }
+    }
+
+    function setSelectedSizes(values){
+      const vals = (values || []).map(v=>String(v).trim()).filter(Boolean);
+      // Ensure checkboxes exist for all values
+      vals.forEach(v=>{
+        if (![...sizesGroupEl.querySelectorAll('input[type="checkbox"]')].some(i=>i.value===v)){
+          const lab = document.createElement('label'); lab.style.marginRight='8px';
+          const cb = document.createElement('input'); cb.type='checkbox'; cb.value=v;
+          lab.appendChild(cb); lab.appendChild(document.createTextNode(' '+v));
+          sizesGroupEl.appendChild(lab);
+        }
+      });
+      // Check those in vals, uncheck others
+      sizesGroupEl.querySelectorAll('input[type="checkbox"]').forEach(i=>{ i.checked = vals.includes(i.value); });
+    }
+
+    function persistDraft(){
+      const draft = {
+        editingId,
+        name: nameEl.value,
+        price: priceEl.value,
+        desc: descEl.value,
+        image: imgEl.value,
+        model_image: modelImgEl.value,
+        sizes: getSelectedSizes(),
+        status: statusEl.value,
+        season: document.getElementById('pSeason').value,
+        type: document.getElementById('pType').value,
+        colors
+      };
+      try { localStorage.setItem('adminFormDraft', JSON.stringify(draft)); } catch(e){}
+    }
+
+    function restoreDraft(){
+      try {
+        const raw = localStorage.getItem('adminFormDraft');
+        if (!raw) return;
+        const d = JSON.parse(raw);
+        editingId = d.editingId || null;
+        nameEl.value = d.name || '';
+        priceEl.value = d.price || '';
+        descEl.value = d.desc || '';
+        imgEl.value = d.image || '';
+        modelImgEl.value = d.model_image || '';
+        setSelectedSizes(d.sizes || []);
+        statusEl.value = d.status || 'in';
+        document.getElementById('pSeason').value = d.season || 'winter';
+        document.getElementById('pType').value = d.type || 'top';
+        const rawColors = Array.isArray(d.colors)?d.colors:[];
+        colors = rawColors.map(c=> typeof c === 'string' ? ({value:c, in:true}) : ({value:c.value, in: c.in!==false}));
+        colorContainer.innerHTML = '';
+        colors.forEach(c=> addColorInput(c.value, c.in!==false));
+      } catch(e){}
+    }
+
+    function updateColorsFromDOM() {
+      colors = Array.from(document.querySelectorAll('#colorContainer .color-row')).map(row => {
+        const val = row.querySelector('input[type="color"]').value;
+        const tog = row.querySelector('button[data-role="toggle"]');
+        const isIn = tog && tog.getAttribute('data-in') === '1';
+        return { value: val, in: !!isIn };
+      });
+    }
+
+    function addColorInput(value = '#000000', isIn = true) {
+      const wrap = document.createElement('div');
+      wrap.className = 'color-row';
+      wrap.style.display = 'flex';
+      wrap.style.alignItems = 'center';
+      wrap.style.gap = '8px';
+
       const input = document.createElement('input');
       input.type = 'color';
-      input.value = '#000000';
-      input.addEventListener('input', () => {
-        colors = Array.from(document.querySelectorAll('#colorContainer input')).map(c => c.value);
-      });
-      colorContainer.appendChild(input);
-    };
+      input.value = value;
+      input.addEventListener('input', ()=>{ updateColorsFromDOM(); persistDraft(); renderColorPreview(); });
 
-    saveBtn.onclick = () => {
+      const toggle = document.createElement('button');
+      toggle.type = 'button';
+      toggle.setAttribute('data-role','toggle');
+      toggle.setAttribute('data-in', isIn ? '1' : '0');
+      function setToggleUI(){
+        const isOn = toggle.getAttribute('data-in') === '1';
+        toggle.textContent = isOn ? 'In' : 'Out';
+        toggle.style.background = isOn ? '#10b981' : '#9ca3af';
+        toggle.style.color = '#fff';
+        toggle.style.border = 'none';
+        toggle.style.borderRadius = '6px';
+        toggle.style.padding = '8px 10px';
+        toggle.style.cursor = 'pointer';
+      }
+      setToggleUI();
+      toggle.addEventListener('click', ()=>{ toggle.setAttribute('data-in', toggle.getAttribute('data-in')==='1'?'0':'1'); setToggleUI(); updateColorsFromDOM(); persistDraft(); renderColorPreview(); });
+
+      const del = document.createElement('button');
+      del.type = 'button';
+      del.textContent = '✕';
+      del.title = 'Remove this color';
+      del.style.width = '36px';
+      del.style.padding = '8px';
+      del.style.background = '#ff4d4f';
+      del.style.color = '#fff';
+      del.style.border = 'none';
+      del.style.borderRadius = '6px';
+      del.style.cursor = 'pointer';
+      del.addEventListener('click', () => {
+        wrap.remove();
+        updateColorsFromDOM();
+        persistDraft();
+        renderColorPreview();
+      });
+
+      wrap.appendChild(input);
+      wrap.appendChild(toggle);
+      wrap.appendChild(del);
+      colorContainer.appendChild(wrap);
+      updateColorsFromDOM();
+      persistDraft();
+      renderColorPreview();
+    }
+
+    addColorBtn.onclick = () => { addColorInput('#000000', true); };
+
+    // Upload attachments and append URLs to the Images field
+    attachBtn && (attachBtn.onclick = () => fileInput && fileInput.click());
+    fileInput && fileInput.addEventListener('change', async () => {
+      const files = Array.from(fileInput.files || []);
+      if (!files.length) return;
+      const fd = new FormData();
+      files.forEach(f => fd.append('files', f));
+      try{
+        const res = await fetch('/api/upload', { method: 'POST', body: fd, credentials: 'include' });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data && data.error || 'Upload failed');
+        const urls = Array.isArray(data.urls) ? data.urls : [];
+        if (urls.length){
+          const current = (imgEl.value || '').trim();
+          const appendVal = urls.join(', ');
+          imgEl.value = current ? (current + ', ' + appendVal) : appendVal;
+          persistDraft();
+          renderProducts();
+        }
+      }catch(e){
+        alert('Failed to upload images');
+      }finally{
+        try{ fileInput.value = ''; }catch(_){ }
+      }
+    });
+
+    // Persist on input changes
+    ;[nameEl, priceEl, descEl, imgEl, sizesGroupEl, statusEl, document.getElementById('pSeason'), document.getElementById('pType')]
+      .forEach(el=>{ el && el.addEventListener('input', persistDraft); el && el.addEventListener('change', persistDraft); });
+
+    saveBtn.onclick = async () => {
       if (!nameEl.value || !priceEl.value) {
         alert('Please enter product name and price.');
         return;
       }
 
       const product = {
-      name: nameEl.value,
-      price: parseFloat(priceEl.value),
-      desc: descEl.value,
-      image: imgEl.value,
-      color: colors.join(','),
-      status: document.getElementById('pStock').value,
-      season: document.getElementById('pSeason').value,
-      type: document.getElementById('pType').value // ✅ إضافة الموسم
-    };
+        name: nameEl.value,
+        price: parseFloat(priceEl.value),
+        desc: descEl.value,
+        image: imgEl.value,
+        model_image: modelImgEl.value,
+        sizes: getSelectedSizes().join(','),
+        // save only colors marked as In
+        color: colors.filter(c=>c && c.in).map(c=>c.value).join(','),
+        status: document.getElementById('pStock').value,
+        season: document.getElementById('pSeason').value,
+        type: document.getElementById('pType').value
+      };
 
-
-      products.push(product);
-      localStorage.setItem('products', JSON.stringify(products));
-      renderProducts();
-      clearForm();
-      alert('✅ Product saved successfully!');
+      try {
+        const res = await fetch('/api/products', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(product) });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data && data.error || 'Save failed');
+        // If we were editing an existing product, delete old after successful save
+        if (editingId){
+          try { await fetch('/api/products/' + encodeURIComponent(editingId), { method:'DELETE' }); } catch(e){}
+        }
+        // Clear draft after successful save
+        localStorage.removeItem('adminFormDraft');
+        editingId = null;
+        clearForm();
+        loadProducts();
+        alert('✅ Product saved successfully!');
+      } catch(e){ alert('Failed to save product'); }
     };
 
     function renderProducts() {
       productList.innerHTML = '';
       products.forEach((p, i) => {
+        const colorDots = (p.color||'').split(',').filter(Boolean).map(c=>`<span style="display:inline-block;width:14px;height:14px;border-radius:50%;border:1px solid #ddd;background:${c};margin-inline-start:6px"></span>`).join('');
         productList.innerHTML += `
           <div class="product-item">
-            <div>
-              <strong>${p.name}</strong><br>
-              ${p.price} EGP — <em>${p.status}</em>
+            <div style="display:flex;align-items:center;gap:12px">
+              <img src="${getPrimaryImage(p)}" alt="" style="width:48px;height:48px;object-fit:cover;border-radius:8px;border:1px solid #eee"/>
+              <div>
+                <strong>${p.name}</strong><br>
+                ${p.price} EGP — <em>${p.status}</em> ${colorDots}
+              </div>
             </div>
             <div class="actions">
-              <button onclick="editProduct(${i})"style=background-color:#5b97ff;>Edit</button>
+              <button onclick="editProduct(${i})" style=background-color:#5b97ff;>Edit</button>
               <button onclick="deleteProduct(${i})" style=background-color:#ff0000;>Delete</button>
             </div>
           </div>`;
       });
     }
 
+    function renderColorPreview(){
+      // Optional: could preview chosen colors somewhere; currently handled in list render when saved
+    }
+
     function editProduct(i) {
-    const p = products[i];
-    nameEl.value = p.name;
-    priceEl.value = p.price;
-    descEl.value = p.desc;
-    imgEl.value = p.image;
-    statusEl.value = p.status;
-    colors = p.color ? p.color.split(',') : [];
-    colorContainer.innerHTML = '';
-    colors.forEach(c => {
-      const input = document.createElement('input');
-      input.type = 'color';
-      input.value = c.trim();
-      colorContainer.appendChild(input);
-    });
-    // ضبط الموسم عند التعديل
-    document.getElementById('pSeason').value = p.season || 'winter';
-    document.getElementById('pType').value = p.type || 'top';
-    document.getElementById('pStock').value = p.status || 'instock';
-    deleteProduct(i);
-  }
+      const p = products[i];
+      if (!p) return;
+      editingId = p.id || null;
+      nameEl.value = p.name || '';
+      priceEl.value = p.price || '';
+      descEl.value = p.desc || '';
+      imgEl.value = p.image || '';
+      modelImgEl.value = p.model_image || '';
+      setSelectedSizes((p.sizes||'').split(',').map(s=>s.trim()).filter(Boolean));
+      statusEl.value = p.status || 'in';
+      colors = (p.color ? p.color.split(',') : []).map(cv=>({value:cv.trim(), in:true}));
+      colorContainer.innerHTML = '';
+      colors.forEach(c => { addColorInput(c.value, true); });
+      document.getElementById('pSeason').value = p.season || 'winter';
+      document.getElementById('pType').value = p.type || 'top';
+      document.getElementById('pStock').value = p.status || 'in';
+      persistDraft();
+    }
 
 
     function deleteProduct(i) {
-      products.splice(i, 1);
-      localStorage.setItem('products', JSON.stringify(products));
-      renderProducts();
+      const p = products[i];
+      if (!p || !p.id) return;
+      fetch('/api/products/' + encodeURIComponent(p.id), { method: 'DELETE' })
+        .then(r => r.ok ? loadProducts() : alert('Delete failed'))
+        .catch(() => alert('Delete failed'));
     }
 
     function clearForm() {
@@ -260,12 +459,23 @@ body::before {
       priceEl.value = '';
       descEl.value = '';
       imgEl.value = '';
+      modelImgEl.value = '';
+      setSelectedSizes([]);
       statusEl.value = 'in';
       colorContainer.innerHTML = '';
       colors = [];
+      editingId = null;
     }
 
-    renderProducts();
+    function loadProducts() {
+      fetch('/api/products')
+        .then(r => r.json())
+        .then(data => { products = Array.isArray(data) ? data : []; renderProducts(); })
+        .catch(() => { products = []; renderProducts(); });
+    }
+
+    restoreDraft();
+    loadProducts();
   </script>
 </body>
 </html>
