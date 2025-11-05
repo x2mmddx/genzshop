@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Your Cart | Gen Z Shop</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    .container { max-width: 900px; margin: 32px auto; padding: 16px; }
+    .cart-header { display:flex; justify-content: space-between; align-items:center; }
+    .cart-table { width:100%; border-collapse: collapse; margin-top: 16px; }
+    .cart-table th, .cart-table td { border-bottom: 1px solid #eee; padding: 12px; text-align: left; }
+    .cart-actions button { padding: 6px 10px; border:none; border-radius: 6px; cursor: pointer; background:#ff4d4f; color:#fff; }
+    .empty { text-align:center; padding: 24px; }
+    .checkout { margin-top: 24px; display:grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .checkout .full { grid-column: 1 / -1; }
+    .btn-primary { background:#111; color:#fff; padding: 12px 16px; border:none; border-radius: 8px; cursor:pointer; }
+    .summary { margin-top: 8px; font-weight: 600; text-align: right; }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <div class="header-container">
+      <div class="logo">Gen Z Shop</div>
+      <nav class="nav">
+        <ul>
+          <li><a href="/index.html">Home</a></li>
+          <li><a href="/cart.html">Cart 🛒 (<span id="cartCount">0</span>)</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <div class="container">
+    <div class="cart-header">
+      <h2>Your Cart</h2>
+      <a href="/index.html">Continue Shopping</a>
+    </div>
+
+    <div id="cartContainer"></div>
+
+    <div class="checkout">
+      <input id="name" placeholder="Full Name" />
+      <input id="phone" placeholder="Phone (01XXXXXXXXX)" />
+      <input id="gov" placeholder="Governorate" />
+      <input id="city" placeholder="City" />
+      <input id="address" class="full" placeholder="Full Address" />
+      <input id="addition" class="full" placeholder="Additional info (optional)" />
+      <div class="full" style="display:flex; gap:12px; align-items:center;">
+        <label>Shipping:</label>
+        <select id="shipping">
+          <option value="50">50 EGP (Normal)</option>
+          <option value="70">70 EGP (Upper Egypt)</option>
+        </select>
+      </div>
+      <div class="full summary">Total: <span id="total">0</span> EGP</div>
+      <button id="checkout" class="btn-primary full">Checkout</button>
+    </div>
+  </div>
+
+  <script>
+    const cartContainer = document.getElementById('cartContainer');
+    const shippingEl = document.getElementById('shipping');
+    const totalEl = document.getElementById('total');
+
+    function refreshCartCount(){
+      fetch('/api/cart', { credentials: 'include' })
+        .then(r => r.json())
+        .then(items => {
+          const cnt = Array.isArray(items) ? items.reduce((a,i)=>a + (Number(i.quantity)||1), 0) : 0;
+          const el = document.getElementById('cartCount');
+          if (el) el.textContent = cnt;
+        })
+        .catch(()=>{ const el = document.getElementById('cartCount'); if (el) el.textContent = 0; });
+    }
+
+    function renderCart(items){
+      if (!Array.isArray(items) || items.length === 0){
+        cartContainer.innerHTML = '<div class="empty">Your cart is empty.</div>';
+        totalEl.textContent = '0';
+        return;
+      }
+      const rows = items.map(it => `
+        <tr>
+          <td>${it.name}</td>
+          <td>${it.color || '-'}</td>
+          <td>${it.size || '-'}</td>
+          <td>${Number(it.price).toFixed(2)} EGP</td>
+          <td>${it.quantity}</td>
+          <td class="cart-actions"><button data-id="${it.id}">Remove</button></td>
+        </tr>
+      `).join('');
+      cartContainer.innerHTML = `
+        <table class="cart-table">
+          <thead>
+            <tr>
+              <th>Product</th><th>Color</th><th>Size</th><th>Price</th><th>Qty</th><th>Action</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      `;
+      cartContainer.querySelectorAll('button[data-id]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const id = btn.getAttribute('data-id');
+          fetch('/api/cart/' + encodeURIComponent(id), { method: 'DELETE', credentials: 'include' })
+            .then(r => r.json())
+            .then(loadCart)
+            .catch(() => alert('Failed to remove item'));
+        });
+      });
+
+      const subtotal = items.reduce((s, it) => s + (Number(it.price) * Number(it.quantity || 1)), 0);
+      const ship = Number(shippingEl.value || 0);
+      totalEl.textContent = (subtotal + ship).toFixed(2);
+    }
+
+    function loadCart(){
+      fetch('/api/cart', { credentials: 'include' })
+        .then(r => r.json())
+        .then(items => { renderCart(items); refreshCartCount(); })
+        .catch(() => { renderCart([]); refreshCartCount(); });
+    }
+
+    shippingEl.addEventListener('change', loadCart);
+
+    document.getElementById('checkout').addEventListener('click', async () => {
+      const name = document.getElementById('name').value.trim();
+      const phone = document.getElementById('phone').value.trim();
+      const gov = document.getElementById('gov').value.trim();
+      const city = document.getElementById('city').value.trim();
+      const address = document.getElementById('address').value.trim();
+      const addition = document.getElementById('addition').value.trim();
+      const shipping = Number(document.getElementById('shipping').value || 0);
+
+      if (!name || !phone || !gov || !city || !address){
+        alert('Please fill all required fields.');
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/orders/checkout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ name, phone, gov, city, address, addition, shipping })
+        });
+        const data = await res.json();
+        if (!res.ok){
+          alert(data.error || 'Checkout failed');
+          return;
+        }
+        alert('✅ Order placed successfully!');
+        loadCart();
+      } catch (e){
+        alert('Checkout failed');
+      }
+    });
+
+    loadCart();
+    refreshCartCount();
+  </script>
+</body>
+</html>
